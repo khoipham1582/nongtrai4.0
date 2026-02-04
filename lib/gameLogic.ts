@@ -2,6 +2,7 @@ import { Player, FarmPlot, AnimalPen, InventoryItem } from '@/types/game';
 import { FARM_LEVELS, CROPS, ANIMALS } from '@/types/gameConfig';
 
 const STORAGE_KEY = 'farm_game_player';
+const PLAYERS_STORAGE_KEY = 'farm_game_players';
 
 // Create a new player with initial resources
 export function createNewPlayer(name: string): Player {
@@ -44,6 +45,7 @@ export function createNewPlayer(name: string): Player {
 // Save player to localStorage
 export function savePlayer(player: Player): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(player));
+  savePlayerToList(player); // Also save to players list
 }
 
 // Load player from localStorage
@@ -55,6 +57,48 @@ export function loadPlayer(): Player | null {
 // Clear player data
 export function clearPlayer(): void {
   localStorage.removeItem(STORAGE_KEY);
+}
+
+// Save multiple players
+export function savePlayers(players: Player[]): void {
+  localStorage.setItem(PLAYERS_STORAGE_KEY, JSON.stringify(players));
+}
+
+// Load all players
+export function loadPlayers(): Player[] {
+  const data = localStorage.getItem(PLAYERS_STORAGE_KEY);
+  return data ? JSON.parse(data) : [];
+}
+
+// Save a specific player (also updates the players list)
+export function savePlayerToList(player: Player): void {
+  const players = loadPlayers();
+  const existingIndex = players.findIndex(p => p.id === player.id);
+  
+  if (existingIndex >= 0) {
+    players[existingIndex] = player;
+  } else {
+    players.push(player);
+  }
+  
+  savePlayers(players);
+}
+
+// Get all players sorted by level and experience
+export function getLeaderboard(): Player[] {
+  const players = loadPlayers();
+  return players.sort((a, b) => {
+    if (a.farmLevel !== b.farmLevel) {
+      return b.farmLevel - a.farmLevel; // Higher level first
+    }
+    return b.experience - a.experience; // Higher exp first
+  });
+}
+
+// Get player by ID
+export function getPlayerById(id: string): Player | null {
+  const players = loadPlayers();
+  return players.find(p => p.id === id) || null;
 }
 
 // Add experience and check for level up

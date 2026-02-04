@@ -66,15 +66,17 @@ npm run lint
 └── .eslintrc.json          # ESLint configuration
 ```
 
-## Features (To Be Implemented)
+## Features (Implemented ✅ / To Be Implemented)
 
-- [ ] User authentication and profiles
-- [ ] Farm management system
-- [ ] Crop and animal management
+- ✅ User authentication and profiles
+- ✅ Farm management system (5 levels)
+- ✅ Crop and animal management
+- ✅ Level up notifications and automatic rewards
+- ✅ Leaderboard system
 - [ ] Trading/marketplace system
 - [ ] Real-time multiplayer interactions
-- [ ] Inventory management
-- [ ] Achievement/progression system
+- ✅ Inventory management
+- ✅ Achievement/progression system
 - [ ] Social features
 
 ## Development Notes

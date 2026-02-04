@@ -8,6 +8,7 @@ import FarmField from '@/components/FarmField';
 import AnimalFarm from '@/components/AnimalFarm';
 import FarmProgress from '@/components/FarmProgress';
 import Notification from '@/components/Notification';
+import Leaderboard from '@/components/Leaderboard';
 
 export default function Home() {
   const [player, setPlayer] = useState<Player | null>(null);
@@ -169,6 +170,9 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Leaderboard */}
+      <Leaderboard currentPlayerId={player?.id} />
     </main>
   );
 }
