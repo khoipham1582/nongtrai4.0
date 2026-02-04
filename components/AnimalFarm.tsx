@@ -3,14 +3,15 @@
 import React, { useState } from 'react';
 import { Player, AnimalPen } from '@/types/game';
 import { ANIMALS, FARM_LEVELS } from '@/types/gameConfig';
-import { collectAnimalProduct } from '@/lib/gameLogic';
+import { collectAnimalProduct, addExperience } from '@/lib/gameLogic';
 
 interface AnimalFarmProps {
   player: Player;
   onUpdate: (updatedPlayer: Player) => void;
+  onLevelUp?: (newLevel: number) => void;
 }
 
-export default function AnimalFarm({ player, onUpdate }: AnimalFarmProps) {
+export default function AnimalFarm({ player, onUpdate, onLevelUp }: AnimalFarmProps) {
   const [notification, setNotification] = useState<string | null>(null);
 
   const farmLevel = FARM_LEVELS.find(f => f.level === player.farmLevel);
@@ -19,8 +20,12 @@ export default function AnimalFarm({ player, onUpdate }: AnimalFarmProps) {
   const handleCollect = (penId: string) => {
     const result = collectAnimalProduct(player, penId);
     if (result.success) {
-      onUpdate({ ...player });
-      setNotification(`Nhận được ${result.productName}! +${result.goldGained} vàng`);
+      const expResult = addExperience(result.player, result.expGained);
+      if (expResult.leveledUp && expResult.newLevel && onLevelUp) {
+        onLevelUp(expResult.newLevel);
+      }
+      onUpdate(expResult.player);
+      setNotification(`Nhận được ${result.productName}! +${result.goldGained} vàng, +${result.expGained} EXP`);
       setTimeout(() => setNotification(null), 3000);
     }
   };

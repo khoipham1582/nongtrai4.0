@@ -3,14 +3,15 @@
 import React, { useState } from 'react';
 import { Player, FarmPlot } from '@/types/game';
 import { CROPS, FARM_LEVELS } from '@/types/gameConfig';
-import { plantCrop, harvestCrop } from '@/lib/gameLogic';
+import { plantCrop, harvestCrop, addExperience } from '@/lib/gameLogic';
 
 interface FarmFieldProps {
   player: Player;
   onUpdate: (updatedPlayer: Player) => void;
+  onLevelUp?: (newLevel: number) => void;
 }
 
-export default function FarmField({ player, onUpdate }: FarmFieldProps) {
+export default function FarmField({ player, onUpdate, onLevelUp }: FarmFieldProps) {
   const [selectedPlot, setSelectedPlot] = useState<string | null>(null);
   const [showPlantMenu, setShowPlantMenu] = useState(false);
   
@@ -30,7 +31,11 @@ export default function FarmField({ player, onUpdate }: FarmFieldProps) {
   const handleHarvest = (plotId: string) => {
     const result = harvestCrop(player, plotId);
     if (result.success) {
-      onUpdate({ ...player });
+      const expResult = addExperience(result.player, result.expGained);
+      if (expResult.leveledUp && expResult.newLevel && onLevelUp) {
+        onLevelUp(expResult.newLevel);
+      }
+      onUpdate(expResult.player);
     }
   };
 

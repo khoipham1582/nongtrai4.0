@@ -7,11 +7,13 @@ import FarmStatus from '@/components/FarmStatus';
 import FarmField from '@/components/FarmField';
 import AnimalFarm from '@/components/AnimalFarm';
 import FarmProgress from '@/components/FarmProgress';
+import Notification from '@/components/Notification';
 
 export default function Home() {
   const [player, setPlayer] = useState<Player | null>(null);
   const [playerName, setPlayerName] = useState('');
   const [showNewGame, setShowNewGame] = useState(false);
+  const [levelUpNotification, setLevelUpNotification] = useState<{ level: number; show: boolean } | null>(null);
 
   useEffect(() => {
     const savedPlayer = loadPlayer();
@@ -49,6 +51,14 @@ export default function Home() {
   const handleUpdatePlayer = (updatedPlayer: Player) => {
     setPlayer(updatedPlayer);
     savePlayer(updatedPlayer);
+  };
+
+  const handleLevelUp = (newLevel: number) => {
+    setLevelUpNotification({ level: newLevel, show: true });
+    // Auto-hide after 8 seconds
+    setTimeout(() => {
+      setLevelUpNotification(null);
+    }, 8000);
   };
 
   const handleNewGame = () => {
@@ -122,6 +132,16 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 md:p-8">
+      {/* Level Up Notification */}
+      {levelUpNotification?.show && (
+        <Notification
+          message={`🎉 Chúc mừng! Bạn đã nâng cấp lên Nông Trại Cấp ${levelUpNotification.level}! 🌾`}
+          type="success"
+          onClose={() => setLevelUpNotification(null)}
+          duration={8000}
+        />
+      )}
+
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -144,8 +164,8 @@ export default function Home() {
 
           {/* Right content */}
           <div className="lg:col-span-2">
-            <FarmField player={player} onUpdate={handleUpdatePlayer} />
-            <AnimalFarm player={player} onUpdate={handleUpdatePlayer} />
+            <FarmField player={player} onUpdate={handleUpdatePlayer} onLevelUp={handleLevelUp} />
+            <AnimalFarm player={player} onUpdate={handleUpdatePlayer} onLevelUp={handleLevelUp} />
           </div>
         </div>
       </div>

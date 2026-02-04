@@ -58,13 +58,15 @@ export function clearPlayer(): void {
 }
 
 // Add experience and check for level up
-export function addExperience(player: Player, amount: number): Player {
+export function addExperience(player: Player, amount: number): { player: Player; leveledUp: boolean; newLevel?: number } {
+  const oldLevel = player.farmLevel;
   player.experience += amount;
 
   // Check for level up
   for (let i = FARM_LEVELS.length - 1; i >= 0; i--) {
     if (player.experience >= FARM_LEVELS[i].requiredExp && player.farmLevel !== FARM_LEVELS[i].level) {
       player.farmLevel = FARM_LEVELS[i].level;
+      
       // Add new farm plots and animal pens when leveling up
       const newLevel = FARM_LEVELS[i];
       const oldLevel = i > 0 ? FARM_LEVELS[i - 1] : FARM_LEVELS[0];
@@ -80,11 +82,44 @@ export function addExperience(player: Player, amount: number): Player {
           isReady: false,
         });
       }
+
+      // Add new animals when leveling up
+      const newAnimals = newLevel.availableAnimals.filter(animal => !oldLevel.availableAnimals.includes(animal));
+      newAnimals.forEach((animalId, index) => {
+        const penId = `pen_${player.animalPens.length}`;
+        player.animalPens.push({
+          id: penId,
+          animalId: animalId,
+          lastProducedAt: Date.now(),
+          readyAt: Date.now() + (ANIMALS[animalId].productionTime * 1000),
+          isReady: false,
+        });
+      });
+
+      // Add new seeds when leveling up
+      const newCrops = newLevel.availableCrops.filter(crop => !oldLevel.availableCrops.includes(crop));
+      newCrops.forEach(cropId => {
+        const seedItem = player.inventory.find(item => item.id === `${cropId}_seed`);
+        if (seedItem) {
+          seedItem.quantity += 5; // Add 5 seeds of new crop
+        } else {
+          player.inventory.push({
+            id: `${cropId}_seed`,
+            name: `Hạt ${CROPS[cropId].name}`,
+            quantity: 5,
+            type: 'seed',
+            sellPrice: 10,
+          });
+        }
+      });
+
+      player.lastUpdated = Date.now();
+      return { player, leveledUp: true, newLevel: player.farmLevel };
     }
   }
 
   player.lastUpdated = Date.now();
-  return player;
+  return { player, leveledUp: false };
 }
 
 // Add gold
@@ -126,14 +161,14 @@ export function plantCrop(player: Player, plotId: string, cropId: string): boole
 }
 
 // Harvest a crop
-export function harvestCrop(player: Player, plotId: string): { success: boolean; expGained: number; goldGained: number } {
+export function harvestCrop(player: Player, plotId: string): { success: boolean; expGained: number; goldGained: number; player: Player } {
   const plot = player.farmPlots.find(p => p.id === plotId);
-  if (!plot || !plot.cropId || !plot.isReady) return { success: false, expGained: 0, goldGained: 0 };
+  if (!plot || !plot.cropId || !plot.isReady) return { success: false, expGained: 0, goldGained: 0, player };
 
   const crop = CROPS[plot.cropId];
-  if (!crop) return { success: false, expGained: 0, goldGained: 0 };
+  if (!crop) return { success: false, expGained: 0, goldGained: 0, player };
 
-  player = addExperience(player, crop.expReward);
+  // Add gold directly
   player = addGold(player, crop.sellPrice);
 
   plot.cropId = null;
@@ -141,18 +176,18 @@ export function harvestCrop(player: Player, plotId: string): { success: boolean;
   plot.readyAt = null;
   plot.isReady = false;
 
-  return { success: true, expGained: crop.expReward, goldGained: crop.sellPrice };
+  return { success: true, expGained: crop.expReward, goldGained: crop.sellPrice, player };
 }
 
 // Collect animal product
-export function collectAnimalProduct(player: Player, penId: string): { success: boolean; expGained: number; goldGained: number; productName: string } {
+export function collectAnimalProduct(player: Player, penId: string): { success: boolean; expGained: number; goldGained: number; productName: string; player: Player } {
   const pen = player.animalPens.find(p => p.id === penId);
-  if (!pen || !pen.isReady) return { success: false, expGained: 0, goldGained: 0, productName: '' };
+  if (!pen || !pen.isReady) return { success: false, expGained: 0, goldGained: 0, productName: '', player };
 
   const animal = ANIMALS[pen.animalId];
-  if (!animal) return { success: false, expGained: 0, goldGained: 0, productName: '' };
+  if (!animal) return { success: false, expGained: 0, goldGained: 0, productName: '', player };
 
-  player = addExperience(player, animal.expReward);
+  // Add gold directly
   player = addGold(player, animal.sellPrice);
 
   const now = Date.now();
@@ -160,7 +195,7 @@ export function collectAnimalProduct(player: Player, penId: string): { success: 
   pen.readyAt = now + animal.productionTime * 1000;
   pen.isReady = false;
 
-  return { success: true, expGained: animal.expReward, goldGained: animal.sellPrice, productName: animal.productName };
+  return { success: true, expGained: animal.expReward, goldGained: animal.sellPrice, productName: animal.productName, player };
 }
 
 // Update farm state (check if crops/animals are ready)
